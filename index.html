@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rover Dashboard</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+            min-height: 100vh;
+        }
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 30px; 
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 { 
+            text-align: center; 
+            color: #333; 
+            margin-bottom: 30px;
+        }
+        button {
+            background: #00b894;
+            color: white;
+            padding: 12px 30px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover { background: #00a085; }
+        button:disabled { 
+            background: #ccc; 
+            cursor: not-allowed; 
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .status.connected { 
+            background: #d1f2eb; 
+            color: #00b894; 
+            border: 2px solid #00b894;
+        }
+        .status.disconnected { 
+            background: #fadbd8; 
+            color: #e74c3c; 
+            border: 2px solid #e74c3c;
+        }
+        .status.connecting { 
+            background: #fff3cd; 
+            color: #856404; 
+            border: 2px solid #ffc107;
+        }
+        .camera-container {
+            text-align: center;
+            margin: 20px 0;
+            display: none;
+        }
+        .camera-feed {
+            max-width: 100%;
+            max-height: 500px;
+            border: 3px solid #333;
+            border-radius: 10px;
+        }
+        .url-display {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-family: monospace;
+            font-size: 14px;
+            text-align: center;
+            border: 2px solid #dee2e6;
+        }
+        .url-display .label {
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 5px;
+        }
+        .url-display .url {
+            color: #0984e3;
+            background: white;
+            padding: 8px;
+            border-radius: 4px;
+            word-break: break-all;
+        }
+        .control-buttons {
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Rover Dashboard</h1>
+        
+        <div class="url-display">
+            <div class="label">📡 Rover URL:</div>
+            <div class="url" id="currentUrl">Connecting to remote.it...</div>
+        </div>
+        
+        <div class="control-buttons">
+            <button onclick="connectToRover()" id="connectBtn">🚀 Connect to Rover</button>
+            <button onclick="disconnectFromRover()" id="disconnectBtn" disabled>🔌 Disconnect</button>
+        </div>
+        
+        <div id="status" class="status disconnected">
+            🔴 Ready to connect
+        </div>
+        
+        <div id="cameraContainer" class="camera-container">
+            <h3>📹 Live Camera Feed:</h3>
+            <img id="cameraFeed" class="camera-feed" alt="Camera feed will appear here">
+            <br><br>
+            <button onclick="refreshCamera()">🔄 Refresh Camera</button>
+            <button onclick="checkRoverStatus()">📊 Check Rover Status</button>
+        </div>
+    </div>
+
+    <script>
+        const ROVER_URL = 'https://7c538a1f246b907e.p60.rt3.io';
+        let connected = false;
+
+        // Update the displayed URL
+        document.getElementById('currentUrl').textContent = ROVER_URL;
+
+        // Function to connect to the rover
+        function connectToRover() {
+            
+            // Update status to "connecting"
+            updateStatus('🟡 Connecting to rover... (this may take 10-15 seconds)', 'connecting');
+            document.getElementById('connectBtn').disabled = true;
+            
+            // Try to connect
+            testConnection();
+        }
+        
+        // Function to test if we can connect to the rover
+        async function testConnection() {
+            try {
+                // Add timeout to prevent hanging
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+                
+                // Try to get status from the rover
+                const response = await fetch(ROVER_URL + '/status', {
+                    signal: controller.signal,
+                    mode: 'cors'
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    // Success! We can connect
+                    connected = true;
+                    updateStatus('🟢 Connected to rover successfully!', 'connected');
+                    showCamera();
+                    document.getElementById('disconnectBtn').disabled = false;
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            } catch (error) {
+                // Connection failed
+                connected = false;
+                let errorMessage = '🔴 Connection failed: ';
+                
+                if (error.name === 'AbortError') {
+                    errorMessage += 'Connection timeout. Check if camera server is running.';
+                } else if (error.message.includes('CORS')) {
+                    errorMessage += 'Browser security blocked the request.';
+                } else if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+                    errorMessage += 'Network error. Check if remote.it URL is correct and rover is online.';
+                } else {
+                    errorMessage += error.message;
+                }
+                
+                updateStatus(errorMessage, 'disconnected');
+                hideCamera();
+                document.getElementById('connectBtn').disabled = false;
+                console.log('Connection error:', error);
+            }
+        }
+        
+        // Function to disconnect from rover
+        function disconnectFromRover() {
+            connected = false;
+            updateStatus('🔴 Disconnected from rover', 'disconnected');
+            hideCamera();
+            document.getElementById('disconnectBtn').disabled = true;
+            document.getElementById('connectBtn').disabled = false;
+        }
+        
+        // Function to update the status message
+        function updateStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status ' + type;
+        }
+        
+        // Function to show the camera feed
+        function showCamera() {
+            const cameraContainer = document.getElementById('cameraContainer');
+            const cameraFeed = document.getElementById('cameraFeed');
+            
+            // Set the camera feed URL
+            cameraFeed.src = ROVER_URL + '/video_feed';
+            
+            // Show the camera container
+            cameraContainer.style.display = 'block';
+            
+            // Handle camera loading errors
+            cameraFeed.onerror = function() {
+                updateStatus('🔴 Camera feed unavailable - Check if camera server is running', 'disconnected');
+            };
+            
+            // Handle successful camera load
+            cameraFeed.onload = function() {
+                updateStatus('🟢 Camera feed loaded successfully!', 'connected');
+            };
+        }
+        
+        // Function to hide the camera feed
+        function hideCamera() {
+            const cameraContainer = document.getElementById('cameraContainer');
+            cameraContainer.style.display = 'none';
+        }
+        
+        // Function to refresh the camera feed
+        function refreshCamera() {
+            if (!connected) {
+                alert('⚠️ Please connect to your rover first!');
+                return;
+            }
+            
+            const cameraFeed = document.getElementById('cameraFeed');
+            // Add timestamp to force refresh
+            cameraFeed.src = ROVER_URL + '/video_feed?' + new Date().getTime();
+            updateStatus('🔄 Refreshing camera feed...', 'connected');
+        }
+        
+        // Function to check rover status
+        async function checkRoverStatus() {
+            if (!connected) {
+                alert('⚠️ Please connect to your rover first!');
+                return;
+            }
+            
+            try {
+                const response = await fetch(ROVER_URL + '/status');
+                const data = await response.json();
+                
+                alert(`📊 Rover Status:\n\n` +
+                      `Camera: ${data.camera}\n` +
+                      `Time: ${data.time}\n` +
+                      `Message: ${data.message}`);
+                      
+                updateStatus('🟢 Status check complete - Rover is working!', 'connected');
+            } catch (error) {
+                alert('❌ Could not get rover status. Check your connection.');
+                updateStatus('🔴 Status check failed', 'disconnected');
+            }
+        }
+        
+        // Auto-connect on page load if URL is set
+        window.addEventListener('load', function() {
+            if (ROVER_URL !== 'YOUR_REMOTE_IT_URL_HERE') {
+                // Automatically show that we're ready to connect
+                updateStatus('🔵 Ready to connect to rover', 'disconnected');
+            }
+        });
+    </script>
+</body>
+</html>
