@@ -122,7 +122,7 @@
 </head>
 <body>
     <div class="container">
-        <h1> MQTT + Camera Test </h1>
+        <h1>🚀 MQTT + Camera Test</h1>
         
         <div id="status" class="status disconnected">
             ❌ Disconnected
@@ -132,7 +132,7 @@
         <button id="testBtn" onclick="sendTestMessage()" disabled>Send Test Message</button>
         
         <div class="camera-section">
-            <h3>📹 Camera Feed (Remote.it Test)</h3>
+            <h3> Camera Feed</h3>
             <input type="text" id="cameraUrl" class="camera-url-input" placeholder="https://your-remote-it-url.p60.rt3.io/video_feed" value="">
             <div class="camera-controls">
                 <button onclick="loadCamera()">📷 Load Camera</button>
@@ -280,14 +280,20 @@
             const refreshBtn = document.getElementById('refreshCamBtn');
             
             if (!cameraUrl) {
-                alert('enter remote.it camera URL!');
+                alert('Please enter your remote.it camera URL!');
                 return;
             }
             
-            log('Loading camera feed from: ' + cameraUrl);
+            log('📷 Loading camera feed from: ' + cameraUrl);
+            
+            // Add /video_feed if not already present
+            let fullUrl = cameraUrl;
+            if (!fullUrl.includes('/video_feed')) {
+                fullUrl = fullUrl.replace(/\/$/, '') + '/video_feed';
+            }
             
             // Set up camera feed
-            cameraFeed.src = cameraUrl + '?' + new Date().getTime();
+            cameraFeed.src = fullUrl + '?' + new Date().getTime();
             
             cameraFeed.onload = function() {
                 cameraLoaded = true;
@@ -301,9 +307,9 @@
                 cameraLoaded = false;
                 cameraFeed.style.display = 'none';
                 cameraOffline.style.display = 'flex';
-                cameraOffline.innerHTML = '📷❌ Camera feed failed to load<br><small>Check your remote.it URL and camera server</small>';
+                cameraOffline.innerHTML = '📷❌ Camera feed failed to load<br><small>Likely CORS issue - try opening in new tab</small><br><button onclick="openCameraInNewTab()" style="margin-top:10px;padding:5px 10px;">🔗 Open in New Tab</button>';
                 refreshBtn.disabled = true;
-                log('❌ Camera feed failed to load. Check URL and camera server.');
+                log('❌ Camera feed failed to load. Likely CORS blocking cross-origin request.');
             };
         }
         
@@ -332,6 +338,16 @@
             cameraOffline.innerHTML = '📷 Camera stopped. Click "Load Camera" to restart.';
             refreshBtn.disabled = true;
             log('📷 Camera feed stopped.');
+        }
+        
+        function openCameraInNewTab() {
+            const cameraUrl = document.getElementById('cameraUrl').value;
+            let fullUrl = cameraUrl;
+            if (!fullUrl.includes('/video_feed')) {
+                fullUrl = fullUrl.replace(/\/$/, '') + '/video_feed';
+            }
+            window.open(fullUrl, '_blank');
+            log('🔗 Opened camera feed in new tab');
         }
     </script>
 </body>
