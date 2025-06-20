@@ -3,106 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MQTT + Camera Test</title>
+    <title>Control Dashboard</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 50px auto;
+            max-width: 800px;
+            margin: 20px auto;
             padding: 20px;
-            background-color: #f5f5f5;
+            background: linear-gradient(135deg, darkgoldenrod 0%, black 100%);
+            min-height: 100vh;
+            color: white;
         }
         .container {
-            background: white;
+            background: rgba(255, 255, 255, 0.1);
             padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         h1 {
-            color: #333;
+            color: white;
             text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
         }
         .status {
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 10px;
             font-weight: bold;
+            text-align: center;
+            font-size: 1.2em;
         }
         .connected {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+            background: rgba(76, 175, 80, 0.3);
+            border: 2px solid #4CAF50;
+            color: #4CAF50;
         }
         .disconnected {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            background: rgba(244, 67, 54, 0.3);
+            border: 2px solid #f44336;
+            color: #f44336;
         }
-        button {
-            background-color: #007bff;
+        .connect-btn {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
             color: white;
             border: none;
             padding: 15px 30px;
             font-size: 18px;
-            border-radius: 5px;
+            border-radius: 10px;
             cursor: pointer;
             width: 100%;
-            margin: 10px 0;
+            margin: 20px 0;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
-        button:hover {
-            background-color: #0056b3;
+        .connect-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
         }
-        button:disabled {
-            background-color: #ccc;
+        .connect-btn:disabled {
+            background: #666;
             cursor: not-allowed;
+            transform: none;
         }
-        .settings {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #f8f9fa;
-            border-radius: 5px;
-        }
-        input {
-            width: 100%;
-            padding: 8px;
-            margin: 5px 0;
-            border: 1px solid #ddd;
-            border-radius: 3px;
-        }
-        .logs {
-            margin-top: 20px;
-            padding: 10px;
-            background-color: #f8f9fa;
-            border-radius: 5px;
-            max-height: 200px;
-            overflow-y: auto;
-        }
+        
+        /* Camera Section */
         .camera-section {
             margin: 30px 0;
             padding: 20px;
-            background-color: #f8f9fa;
-            border-radius: 10px;
-            border: 2px solid #dee2e6;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         .camera-feed {
             max-width: 100%;
-            max-height: 400px;
-            border: 3px solid #333;
+            max-height: 300px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
             border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
             display: block;
-            margin: 0 auto;
+            margin: 15px auto;
         }
         .camera-offline {
             width: 100%;
-            height: 250px;
-            background: #e9ecef;
-            border: 3px dashed #adb5bd;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px dashed rgba(255, 255, 255, 0.3);
             border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #6c757d;
+            color: rgba(255, 255, 255, 0.7);
             font-size: 16px;
             text-align: center;
         }
@@ -110,53 +103,217 @@
             text-align: center;
             margin-top: 15px;
         }
-        .camera-url-input {
-            width: 100%;
-            padding: 8px;
-            margin: 5px 0;
-            border: 1px solid #ddd;
-            border-radius: 3px;
+        .camera-controls button {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .camera-controls button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .camera-controls button:disabled {
+            background: rgba(255, 255, 255, 0.1);
+            cursor: not-allowed;
+        }
+        
+        /* Rover Controls */
+        .rover-controls {
+            margin: 30px 0;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .controls-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 500px;
+            margin: 0 auto;
+            gap: 80px;
+        }
+        .drive-controls, .steering-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+        }
+        .steering-controls {
+            flex-direction: row;
+            gap: 20px;
+        }
+        .control-btn {
+            width: 80px;
+            height: 80px;
+            border: none;
+            border-radius: 15px;
+            font-size: 30px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+        }
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+        .forward-btn {
+            background: linear-gradient(45deg,  darkcyan, white);
+            color: white;
+        }
+        .backward-btn {
+            background: linear-gradient(45deg,  darkcyan, white);
+            color: white;
+        }
+        .left-btn {
+            background: linear-gradient(45deg, #9C27B0, #7B1FA2);
+            color: white;
+        }
+        .right-btn {
+            background: linear-gradient(45deg, #4CAF50, #388E3C);
+            color: white;
+        }
+        .stop-btn {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+            color: white;
+            width: 100px;
+            height: 50px;
+            margin: 20px auto;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .control-label {
+            margin: 10px 0;
+            font-weight: bold;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        /* Logs */
+        .logs {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            max-height: 250px;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .logs h4 {
+            margin: 0 0 15px 0;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        #logArea {
             font-family: monospace;
+            font-size: 13px;
+            line-height: 1.4;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        @media (max-width: 600px) {
+            .controls-container {
+                flex-direction: column;
+                gap: 40px;
+            }
+            .control-btn {
+                width: 70px;
+                height: 70px;
+                font-size: 25px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🚀 MQTT + Camera Test</h1>
+        <h1>🚗 Rover Control Dashboard</h1>
         
         <div id="status" class="status disconnected">
             ❌ Disconnected
         </div>
         
-        <button id="connectBtn" onclick="connectMQTT()">Connect to MQTT</button>
-        <button id="testBtn" onclick="sendTestMessage()" disabled>Send Test Message</button>
+        <button id="connectBtn" class="connect-btn" onclick="connectMQTT()">Connect to Rover</button>
         
         <div class="camera-section">
-            <h3> Camera Feed</h3>
-            <input type="text" id="cameraUrl" class="camera-url-input" placeholder="https://your-remote-it-url.p60.rt3.io/video_feed" value="">
+            <h3>📷 Camera Feed</h3>
             <div class="camera-controls">
-                <button onclick="loadCamera()">📷 Load Camera</button>
-                <button onclick="refreshCamera()" id="refreshCamBtn" disabled>🔄 Refresh</button>
-                <button onclick="stopCamera()">❌ Stop Camera</button>
+                <button onclick="loadCamera()" id="loadCamBtn">Load Camera</button>
+                <button onclick="stopCamera()" id="stopCamBtn">Stop Camera</button>
             </div>
             <div style="margin-top: 15px;">
                 <div id="cameraOffline" class="camera-offline">
-                    Enter remote.it camera URL above
+                    Click "Load Camera" to start video feed
                 </div>
                 <img id="cameraFeed" class="camera-feed" style="display: none;" alt="Camera feed">
             </div>
         </div>
         
-        <div class="settings">
-            <h3>HiveMQ Settings</h3>
-            <input type="text" id="brokerUrl" placeholder="your-cluster.s1.eu.hivemq.cloud" value="">
-            <input type="text" id="username" placeholder="Username" value="">
-            <input type="password" id="password" placeholder="Password" value="">
-            <input type="text" id="topic" placeholder="Topic" value="test/button">
+        <div class="rover-controls">
+            <h3 style="text-align: center; margin-bottom: 30px;">🎮 Rover Controls</h3>
+            <div class="controls-container">
+                <div class="drive-controls">
+                    <div class="control-label">DRIVE</div>
+                    <button class="control-btn forward-btn" 
+                            onmousedown="startDrive('forward')" 
+                            onmouseup="stopDrive()" 
+                            onmouseleave="stopDrive()"
+                            ontouchstart="startDrive('forward')" 
+                            ontouchend="stopDrive()"
+                            disabled>
+                        ⬆️
+                    </button>
+                    <button class="control-btn backward-btn" 
+                            onmousedown="startDrive('backward')" 
+                            onmouseup="stopDrive()" 
+                            onmouseleave="stopDrive()"
+                            ontouchstart="startDrive('backward')" 
+                            ontouchend="stopDrive()"
+                            disabled>
+                        ⬇️
+                    </button>
+                </div>
+                
+                <div class="steering-controls">
+                    <button class="control-btn left-btn" 
+                            onmousedown="startSteering('left')" 
+                            onmouseup="stopSteering()" 
+                            onmouseleave="stopSteering()"
+                            ontouchstart="startSteering('left')" 
+                            ontouchend="stopSteering()"
+                            disabled>
+                        ⬅️
+                    </button>
+                    <div>
+                        <div class="control-label">STEERING</div>
+                        <button class="control-btn stop-btn" onclick="emergencyStop()" disabled>
+                            🛑 STOP
+                        </button>
+                    </div>
+                    <button class="control-btn right-btn" 
+                            onmousedown="startSteering('right')" 
+                            onmouseup="stopSteering()" 
+                            onmouseleave="stopSteering()"
+                            ontouchstart="startSteering('right')" 
+                            ontouchend="stopSteering()"
+                            disabled>
+                        ➡️
+                    </button>
+                </div>
+            </div>
         </div>
         
         <div class="logs">
-            <h4>📋 Logs:</h4>
+            <h4>📋 System Logs</h4>
             <div id="logArea"></div>
         </div>
     </div>
@@ -165,71 +322,75 @@
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     
     <script>
+        // MQTT Configuration - Replace with your actual credentials
+        const MQTT_CONFIG = {
+            brokerUrl: "b0a3e46d97c94c7cb0eb59cd9684143c.s1.eu.hivemq.cloud",
+            username: "rasppi02W",
+            password: "Anakonda1#",
+            topics: {
+                drive: "rover/drive",
+                steering: "rover/steering",
+                emergency: "rover/emergency"
+            }
+        };
+        
+        // Camera URL - Replace with your remote.it URL
+        const CAMERA_URL = "https://raspberrypi-camera-server.at.remote.it:5000/video_feed";
+        
         let client = null;
         let isConnected = false;
+        let cameraLoaded = false;
         
         function log(message) {
             const logArea = document.getElementById('logArea');
             const timestamp = new Date().toLocaleTimeString();
             logArea.innerHTML += `<div>[${timestamp}] ${message}</div>`;
-            logArea.scrollTop = logArea.scrollTop + 1000;
+            logArea.scrollTop = logArea.scrollHeight;
         }
         
         function updateStatus(connected) {
             const statusEl = document.getElementById('status');
             const connectBtn = document.getElementById('connectBtn');
-            const testBtn = document.getElementById('testBtn');
+            const controlBtns = document.querySelectorAll('.control-btn');
             
             if (connected) {
                 statusEl.className = 'status connected';
-                statusEl.textContent = '✅ Connected';
+                statusEl.textContent = '✅ Connected to Rover';
                 connectBtn.textContent = 'Disconnect';
-                testBtn.disabled = false;
+                controlBtns.forEach(btn => btn.disabled = false);
                 isConnected = true;
             } else {
                 statusEl.className = 'status disconnected';
                 statusEl.textContent = '❌ Disconnected';
-                connectBtn.textContent = 'Connect to MQTT';
-                testBtn.disabled = true;
+                connectBtn.textContent = 'Connect to Rover';
+                controlBtns.forEach(btn => btn.disabled = true);
                 isConnected = false;
             }
         }
         
         function connectMQTT() {
             if (isConnected) {
-                // Disconnect
                 if (client) {
                     client.end();
                     client = null;
                 }
                 updateStatus(false);
-                log('Disconnected from MQTT broker');
+                log('Disconnected from rover');
                 return;
             }
             
-            // Get connection details
-            const brokerUrl = document.getElementById('brokerUrl').value;
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
+            log('Connecting to rover...');
             
-            if (!brokerUrl || !username || !password) {
-                alert('Please fill in all connection details!');
-                return;
-            }
-            
-            // Connect
-            log('Connecting to MQTT broker...');
-            
-            const wsUrl = `wss://${brokerUrl}:8884/mqtt`;
+            const wsUrl = `wss://${MQTT_CONFIG.brokerUrl}:8884/mqtt`;
             
             client = mqtt.connect(wsUrl, {
-                username: username,
-                password: password,
-                reconnectPeriod: 0 // Disable automatic reconnection for this test
+                username: MQTT_CONFIG.username,
+                password: MQTT_CONFIG.password,
+                reconnectPeriod: 0
             });
             
             client.on('connect', function() {
-                log('✅ Connected to MQTT broker successfully!');
+                log('✅ Connected to rover successfully!');
                 updateStatus(true);
             });
             
@@ -242,113 +403,139 @@
                 log('📡 Connection closed');
                 updateStatus(false);
             });
-            
-            client.on('offline', function() {
-                log('📵 Client went offline');
-                updateStatus(false);
-            });
         }
         
-        function sendTestMessage() {
+        // Rover Control Functions
+        function publishCommand(topic, command) {
             if (!client || !isConnected) {
-                alert('Not connected to MQTT broker!');
+                log('❌ Not connected to rover!');
                 return;
             }
             
-            const topic = document.getElementById('topic').value || 'test/button';
-            const message = 'BUTTON_PRESSED';
-            
-            client.publish(topic, message, { qos: 0 }, function(error) {
+            client.publish(topic, command, { qos: 0 }, function(error) {
                 if (error) {
-                    log('❌ Failed to send message: ' + error.message);
+                    log('❌ Failed to send command: ' + error.message);
                 } else {
-                    log(`📤 Message sent to topic "${topic}": ${message}`);
+                    log(`📤 ${topic}: ${command}`);
                 }
             });
         }
         
-        // Initialize
-        log('Dashboard loaded. Enter your HiveMQ details and click Connect.');
+        function startDrive(direction) {
+            publishCommand(MQTT_CONFIG.topics.drive, direction);
+        }
         
-        // Camera functions
-        let cameraLoaded = false;
+        function stopDrive() {
+            publishCommand(MQTT_CONFIG.topics.drive, 'stop');
+        }
         
+        function startSteering(direction) {
+            publishCommand(MQTT_CONFIG.topics.steering, direction);
+        }
+        
+        function stopSteering() {
+            publishCommand(MQTT_CONFIG.topics.steering, 'center');
+        }
+        
+        function emergencyStop() {
+            publishCommand(MQTT_CONFIG.topics.emergency, 'stop');
+            publishCommand(MQTT_CONFIG.topics.drive, 'stop');
+            publishCommand(MQTT_CONFIG.topics.steering, 'center');
+            log('🚨 EMERGENCY STOP ACTIVATED');
+        }
+        
+        // Camera Functions
         function loadCamera() {
-            const cameraUrl = document.getElementById('cameraUrl').value;
             const cameraFeed = document.getElementById('cameraFeed');
             const cameraOffline = document.getElementById('cameraOffline');
-            const refreshBtn = document.getElementById('refreshCamBtn');
             
-            if (!cameraUrl) {
-                alert('Please enter your remote.it camera URL!');
-                return;
-            }
+            log('📷 Loading camera feed...');
             
-            log('📷 Loading camera feed from: ' + cameraUrl);
+            // Try to load the camera feed
+            cameraFeed.src = CAMERA_URL + '?' + new Date().getTime();
             
-            // Add /video_feed if not already present
-            let fullUrl = cameraUrl;
-            if (!fullUrl.includes('/video_feed')) {
-                fullUrl = fullUrl.replace(/\/$/, '') + '/video_feed';
-            }
-            
-            // Set up camera feed
-            cameraFeed.src = fullUrl + '?' + new Date().getTime();
+            // Set a timeout to handle CORS issues
+            const loadTimeout = setTimeout(() => {
+                if (!cameraLoaded) {
+                    handleCameraError();
+                }
+            }, 5000);
             
             cameraFeed.onload = function() {
+                clearTimeout(loadTimeout);
                 cameraLoaded = true;
                 cameraFeed.style.display = 'block';
                 cameraOffline.style.display = 'none';
-                refreshBtn.disabled = false;
                 log('✅ Camera feed loaded successfully!');
             };
             
             cameraFeed.onerror = function() {
-                cameraLoaded = false;
-                cameraFeed.style.display = 'none';
-                cameraOffline.style.display = 'flex';
-                cameraOffline.innerHTML = '📷❌ Camera feed failed to load<br><small>Likely CORS issue - try opening in new tab</small><br><button onclick="openCameraInNewTab()" style="margin-top:10px;padding:5px 10px;">🔗 Open in New Tab</button>';
-                refreshBtn.disabled = true;
-                log('❌ Camera feed failed to load. Likely CORS blocking cross-origin request.');
+                clearTimeout(loadTimeout);
+                handleCameraError();
             };
         }
         
-        function refreshCamera() {
-            if (!cameraLoaded) {
-                alert('Camera not loaded! Load camera first.');
-                return;
-            }
-            
-            const cameraUrl = document.getElementById('cameraUrl').value;
+        function handleCameraError() {
             const cameraFeed = document.getElementById('cameraFeed');
+            const cameraOffline = document.getElementById('cameraOffline');
             
-            log('🔄 Refreshing camera feed...');
-            cameraFeed.src = cameraUrl + '?' + new Date().getTime();
+            cameraLoaded = false;
+            cameraFeed.style.display = 'none';
+            cameraOffline.style.display = 'flex';
+            cameraOffline.innerHTML = `
+                <div style="text-align: center;">
+                    📷❌ Camera feed blocked by CORS<br>
+                    <small>This is a browser security limitation</small><br><br>
+                    <button onclick="openCameraInNewTab()" style="padding: 8px 16px; margin: 5px; border: none; border-radius: 5px; background: rgba(255,255,255,0.8); color: #333; cursor: pointer;">
+                        🔗 Open Camera in New Tab
+                    </button><br>
+                    <button onclick="embedCamera()" style="padding: 8px 16px; margin: 5px; border: none; border-radius: 5px; background: rgba(255,255,255,0.8); color: #333; cursor: pointer;">
+                        📺 Try Embed Method
+                    </button>
+                </div>
+            `;
+            log('❌ Camera blocked by CORS policy - offering alternatives');
+        }
+        
+        function embedCamera() {
+            const cameraOffline = document.getElementById('cameraOffline');
+            
+            log('📺 Trying iframe embed method...');
+            
+            cameraOffline.innerHTML = `
+                <iframe src="${CAMERA_URL}" 
+                        style="width: 100%; height: 300px; border: none; border-radius: 10px;" 
+                        sandbox="allow-same-origin allow-scripts"
+                        onerror="log('❌ Iframe method also failed')">
+                </iframe>
+            `;
+        }
+        
+        function openCameraInNewTab() {
+            window.open(CAMERA_URL, '_blank', 'width=800,height=600');
+            log('🔗 Opened camera feed in new tab');
         }
         
         function stopCamera() {
             const cameraFeed = document.getElementById('cameraFeed');
             const cameraOffline = document.getElementById('cameraOffline');
-            const refreshBtn = document.getElementById('refreshCamBtn');
             
             cameraLoaded = false;
             cameraFeed.style.display = 'none';
             cameraFeed.src = '';
             cameraOffline.style.display = 'flex';
-            cameraOffline.innerHTML = '📷 Camera stopped. Click "Load Camera" to restart.';
-            refreshBtn.disabled = true;
-            log('📷 Camera feed stopped.');
+            cameraOffline.innerHTML = '"Load Camera" to start video feed';
+            log('📷 Camera feed stopped');
         }
         
-        function openCameraInNewTab() {
-            const cameraUrl = document.getElementById('cameraUrl').value;
-            let fullUrl = cameraUrl;
-            if (!fullUrl.includes('/video_feed')) {
-                fullUrl = fullUrl.replace(/\/$/, '') + '/video_feed';
-            }
-            window.open(fullUrl, '_blank');
-            log('🔗 Opened camera feed in new tab');
-        }
+        // Initialize
+        log(' Control Dashboard loaded');
+        
+        
+        // Prevent context menu on control buttons
+        document.querySelectorAll('.control-btn').forEach(btn => {
+            btn.addEventListener('contextmenu', e => e.preventDefault());
+        });
     </script>
 </body>
 </html>
