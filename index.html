@@ -1,4 +1,4 @@
-<!DOCTYPE html>    
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -8,9 +8,9 @@
         body {
             font-family: Arial, sans-serif;
             max-width: 800px;
-            margin: 20px auo;
+            margin: 20px auto;
             padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, blanchedalmond 100%);
+            background: linear-gradient(135deg, darkgoldenrod 0%, black 100%);
             min-height: 100vh;
             color: white;
         }
@@ -169,19 +169,19 @@
             transform: scale(0.95);
         }
         .forward-btn {
-              background: linear-gradient(120deg, white, gold);
+            background: linear-gradient(45deg,  darkcyan, white);
             color: white;
         }
         .backward-btn {
-            background: linear-gradient(0deg, white, gold);
+            background: linear-gradient(45deg,  darkcyan, white);
             color: white;
         }
         .left-btn {
-            background: linear-gradient(135deg, white, darkblue);
+            background: linear-gradient(45deg, #9C27B0, #7B1FA2);
             color: white;
         }
         .right-btn {
-            background: linear-gradient(135deg, white, darkblue);
+            background: linear-gradient(45deg, #4CAF50, #388E3C);
             color: white;
         }
         .stop-btn {
@@ -236,7 +236,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Control Dashboard</h1>
+        <h1>🚗 Rover Control Dashboard</h1>
         
         <div id="status" class="status disconnected">
             ❌ Disconnected
@@ -259,7 +259,7 @@
         </div>
         
         <div class="rover-controls">
-            <h3 style="text-align: center; margin-bottom: 30px;">🎮Controls</h3>
+            <h3 style="text-align: center; margin-bottom: 30px;">🎮 Rover Controls</h3>
             <div class="controls-container">
                 <div class="drive-controls">
                     <div class="control-label">DRIVE</div>
@@ -322,7 +322,7 @@
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     
     <script>
-        // MQTT Configuration
+        // MQTT Configuration - Replace with your actual credentials
         const MQTT_CONFIG = {
             brokerUrl: "b0a3e46d97c94c7cb0eb59cd9684143c.s1.eu.hivemq.cloud",
             username: "rasppi02W",
@@ -334,7 +334,7 @@
             }
         };
         
-        // Camera URL
+        // Camera URL - Replace with your remote.it URL
         const CAMERA_URL = "https://raspberrypi-camera-server.at.remote.it:5000";
         
         let client = null;
@@ -451,9 +451,18 @@
             
             log('📷 Loading camera feed...');
             
+            // Try to load the camera feed
             cameraFeed.src = CAMERA_URL + '?' + new Date().getTime();
             
+            // Set a timeout to handle CORS issues
+            const loadTimeout = setTimeout(() => {
+                if (!cameraLoaded) {
+                    handleCameraError();
+                }
+            }, 5000);
+            
             cameraFeed.onload = function() {
+                clearTimeout(loadTimeout);
                 cameraLoaded = true;
                 cameraFeed.style.display = 'block';
                 cameraOffline.style.display = 'none';
@@ -461,12 +470,50 @@
             };
             
             cameraFeed.onerror = function() {
-                cameraLoaded = false;
-                cameraFeed.style.display = 'none';
-                cameraOffline.style.display = 'flex';
-                cameraOffline.innerHTML = '📷❌ Camera feed failed to load<br><small>Check your remote.it URL</small>';
-                log('❌ Camera feed failed to load');
+                clearTimeout(loadTimeout);
+                handleCameraError();
             };
+        }
+        
+        function handleCameraError() {
+            const cameraFeed = document.getElementById('cameraFeed');
+            const cameraOffline = document.getElementById('cameraOffline');
+            
+            cameraLoaded = false;
+            cameraFeed.style.display = 'none';
+            cameraOffline.style.display = 'flex';
+            cameraOffline.innerHTML = `
+                <div style="text-align: center;">
+                    📷❌ Camera feed blocked by CORS<br>
+                    <small>This is a browser security limitation</small><br><br>
+                    <button onclick="openCameraInNewTab()" style="padding: 8px 16px; margin: 5px; border: none; border-radius: 5px; background: rgba(255,255,255,0.8); color: #333; cursor: pointer;">
+                        🔗 Open Camera in New Tab
+                    </button><br>
+                    <button onclick="embedCamera()" style="padding: 8px 16px; margin: 5px; border: none; border-radius: 5px; background: rgba(255,255,255,0.8); color: #333; cursor: pointer;">
+                        📺 Try Embed Method
+                    </button>
+                </div>
+            `;
+            log('❌ Camera blocked by CORS policy - offering alternatives');
+        }
+        
+        function embedCamera() {
+            const cameraOffline = document.getElementById('cameraOffline');
+            
+            log('📺 Trying iframe embed method...');
+            
+            cameraOffline.innerHTML = `
+                <iframe src="${CAMERA_URL}" 
+                        style="width: 100%; height: 300px; border: none; border-radius: 10px;" 
+                        sandbox="allow-same-origin allow-scripts"
+                        onerror="log('❌ Iframe method also failed')">
+                </iframe>
+            `;
+        }
+        
+        function openCameraInNewTab() {
+            window.open(CAMERA_URL, '_blank', 'width=800,height=600');
+            log('🔗 Opened camera feed in new tab');
         }
         
         function stopCamera() {
@@ -477,12 +524,12 @@
             cameraFeed.style.display = 'none';
             cameraFeed.src = '';
             cameraOffline.style.display = 'flex';
-            cameraOffline.innerHTML = 'Click "Load Camera" to start video feed';
+            cameraOffline.innerHTML = '"Load Camera" to start video feed';
             log('📷 Camera feed stopped');
         }
         
         // Initialize
-        log('Control Dashboard loaded');
+        log(' Control Dashboard loaded');
         
         
         // Prevent context menu on control buttons
