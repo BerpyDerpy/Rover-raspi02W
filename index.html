@@ -43,7 +43,7 @@
             border: 2px solid #f44336;
             color: #f44336;
         }
-        .rover-controls {
+        .rover-controls, .camera-section {
             margin: 30px 0;
             padding: 30px;
             background: rgba(255, 255, 255, 0.1);
@@ -74,7 +74,57 @@
             height: 50px;
             border-radius: 25px;
         }
-        /* Add other styles as needed */
+
+        /* Camera Styles */
+        .camera-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .camera-controls button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s ease;
+        }
+        .camera-controls button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .camera-feed {
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            background-color: rgba(0, 0, 0, 0.3); 
+            height: 300px; 
+            object-fit: contain; 
+        }
+        .camera-offline {
+            width: 100%;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            font-size: 1.1em;
+            color: rgba(255, 255, 255, 0.7);
+            text-align: center;
+        }
+        .camera-offline button {
+            padding: 8px 16px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255,255,255,0.8);
+            color: #333;
+            cursor: pointer;
+        }
+
     </style>
 </head>
 <body>
@@ -104,6 +154,20 @@
             </div>
         </div>
 
+        <div class="camera-section">
+            <h3 style="text-align: center; margin-bottom: 30px;">📷 Camera Feed</h3>
+            <div class="camera-controls">
+                <button onclick="loadCamera()" id="loadCamBtn">Load Camera</button>
+                <button onclick="stopCamera()" id="stopCamBtn">Stop Camera</button>
+            </div>
+            <div style="margin-top: 15px;">
+                <div id="cameraOffline" class="camera-offline">
+                    Click "Load Camera" to start video feed
+                </div>
+                <img id="cameraFeed" class="camera-feed" style="display: none;" alt="Camera feed">
+            </div>
+        </div>
+
         <div class="logs">
             <h4>📋 System Logs</h4>
             <div id="logArea"></div>
@@ -124,9 +188,12 @@
             }
         };
 
+        const CAMERA_URL = "https://raspberrypi-camera-server.at.remote.it:5000/video_feed"; 
+
         // --- STATE & ELEMENTS ---
         let client = null;
         let isConnected = false;
+        let cameraLoaded = false;
         const allControlButtons = document.querySelectorAll('.control-btn');
 
         // --- LOGIC ---
@@ -232,6 +299,97 @@
             publishCommand(MQTT_CONFIG.topics.emergency, 'stop');
         }
 
+        // --- CAMERA FUNCTIONS ---
+        function loadCamera() {
+            const cameraFeed = document.getElementById('cameraFeed');
+            const cameraOffline = document.getElementById('cameraOffline');
+                        
+            log('📷 Loading camera feed...');
+            cameraLoaded = false; // Reset camera loaded status
+
+            // Try to load the camera feed
+            // Append a timestamp to the URL to prevent caching and force reload
+            cameraFeed.src = CAMERA_URL + '?' + new Date().getTime();
+            
+            // Show the loading indicator or hide previous errors
+            cameraOffline.style.display = 'flex';
+            cameraOffline.innerHTML = 'Loading camera feed...';
+            cameraFeed.style.display = 'none';
+
+            // Set a timeout to handle CORS issues or network delays
+            const loadTimeout = setTimeout(() => {
+                if (!cameraLoaded) {
+                    handleCameraError();
+                }
+            }, 5000); // 5 seconds timeout
+
+            cameraFeed.onload = function() {
+                clearTimeout(loadTimeout);
+                cameraLoaded = true;
+                cameraFeed.style.display = 'block';
+                cameraOffline.style.display = 'none';
+                log('✅ Camera feed loaded successfully!');
+            };
+
+            cameraFeed.onerror = function() {
+                clearTimeout(loadTimeout);
+                handleCameraError();
+            };
+        }
+        
+        function handleCameraError() {
+            const cameraFeed = document.getElementById('cameraFeed');
+            const cameraOffline = document.getElementById('cameraOffline');
+                        
+            cameraLoaded = false;
+            cameraFeed.style.display = 'none';
+            cameraOffline.style.display = 'flex';
+            cameraOffline.innerHTML = `
+                <div style="text-align: center;">
+                    📷❌ Camera feed blocked by CORS or failed to load<br>
+                    <small>This is often a browser security limitation</small><br><br>
+                    <button onclick="openCameraInNewTab()" style="padding: 8px 16px; margin: 5px; border: none; border-radius: 5px; background: rgba(255,255,255,0.8); color: #333; cursor: pointer;">
+                        🔗 Open Camera in New Tab
+                    </button><br>
+                    <button onclick="embedCamera()" style="padding: 8px 16px; margin: 5px; border: none; border-radius: 5px; background: rgba(255,255,255,0.8); color: #333; cursor: pointer;">
+                        📺 Try Embed Method
+                    </button>
+                </div>
+            `;
+            log('❌ Camera blocked by CORS policy or failed - offering alternatives');
+        }
+        
+        function embedCamera() {
+            const cameraOffline = document.getElementById('cameraOffline');
+                        
+            log('📺 Trying iframe embed method...');
+            cameraOffline.innerHTML = `
+                <iframe src="${CAMERA_URL}"
+                        style="width: 100%; height: 300px; border: none; border-radius: 10px;"
+                        sandbox="allow-same-origin allow-scripts"
+                        onerror="log('❌ Iframe method also failed'); this.parentElement.innerHTML = 'Failed to embed camera. Try opening in new tab.';">
+                </iframe>
+            `;
+        }
+        
+        function openCameraInNewTab() {
+            window.open(CAMERA_URL, '_blank', 'width=800,height=600');
+            log('🔗 Opened camera feed in new tab');
+        }
+        
+        function stopCamera() {
+            const cameraFeed = document.getElementById('cameraFeed');
+            const cameraOffline = document.getElementById('cameraOffline');
+                        
+            cameraLoaded = false;
+            cameraFeed.style.display = 'none';
+            cameraFeed.src = ''; // Clear the image source
+            cameraOffline.style.display = 'flex';
+            cameraOffline.innerHTML = 'Click "Load Camera" to start video feed';
+            log('📷 Camera feed stopped');
+        }
+
+
         // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
             log('Control Dashboard Loaded');
@@ -262,3 +420,4 @@
     </script>
 </body>
 </html>
+
