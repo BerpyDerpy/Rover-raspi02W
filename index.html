@@ -194,6 +194,7 @@
         let client = null;
         let isConnected = false;
         let cameraLoaded = false;
+        let stopCamPressed = false;
         const allControlButtons = document.querySelectorAll('.control-btn');
 
         // --- LOGIC ---
@@ -326,6 +327,7 @@
             cameraFeed.onload = function() {
                 clearTimeout(loadTimeout);
                 cameraLoaded = true;
+                stopCamPressed = false;
                 cameraFeed.style.display = 'block';
                 cameraOffline.style.display = 'none';
                 log('✅ Camera feed loaded successfully!');
@@ -344,6 +346,7 @@
             cameraLoaded = false;
             cameraFeed.style.display = 'none';
             cameraOffline.style.display = 'flex';
+            if(!stopCamPressed){
             cameraOffline.innerHTML = `
                 <div style="text-align: center;">
                     📷❌ Camera feed blocked by CORS or failed to load<br>
@@ -357,6 +360,7 @@
                 </div>
             `;
             log('❌ Camera blocked by CORS policy or failed - offering alternatives');
+        }
         }
         
         function embedCamera() {
@@ -382,6 +386,7 @@
             const cameraOffline = document.getElementById('cameraOffline');
                         
             cameraLoaded = false;
+            stopCamPressed = true;
             cameraFeed.style.display = 'none';
             cameraFeed.src = ''; // Clear the image source
             cameraOffline.style.display = 'flex';
