@@ -346,7 +346,7 @@
             cameraLoaded = false;
             cameraFeed.style.display = 'none';
             cameraOffline.style.display = 'flex';
-            if(!stopCamPressed){
+            //if(!stopCamPressed){
             cameraOffline.innerHTML = `
                 <div style="text-align: center;">
                     📷❌ Camera feed blocked by CORS or failed to load<br>
@@ -360,7 +360,7 @@
                 </div>
             `;
             log('❌ Camera blocked by CORS policy or failed - offering alternatives');
-        }
+       // }
         }
         
         function embedCamera() {
